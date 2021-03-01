@@ -22,8 +22,8 @@ public class Main {
         Camera camera = new Camera();
         camera.setIp("192.168.1.112");
         camera.setPort(1212);
-        camera.setUsername("masa");
-        camera.setPassword("8ASD871HG");
+        camera.setUsername("xxxxx");
+        camera.setPassword("xxxxxxxx");
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(camera));
 
     }
@@ -35,7 +35,7 @@ public class Main {
 
     private static void cameraBotTest() {
         CameraBot cameraBot = new CameraBot();
-        cameraBot.login("admin", "a1234567", "http://10.0.0.67/");
+        cameraBot.login("xxxxxx", "xxxxxx", "http://10.0.0.67/");
 //        cameraBot.addWhiteListTab(new WhiteListData("42CDU850", "Fatih", date, date));
 //        cameraBot.importWhiteList("/home/fatih/Videos/test.csv");
         System.out.println(cameraBot.importBlackList("/home/fatih/Videos/blackListTemplate.csv"));
