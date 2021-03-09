@@ -3,15 +3,11 @@ package io.hubbox;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hubbox.api.MainApi;
-import io.hubbox.bot.BotDriver;
 import io.hubbox.bot.CameraBot;
 import io.hubbox.model.Camera;
-import io.hubbox.model.WhiteListData;
-import io.hubbox.tool.ParentFile;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author fatih
@@ -24,13 +20,23 @@ public class Main {
         camera.setPort(1212);
         camera.setUsername("masa");
         camera.setPassword("8ASD871HG");
-        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(camera));
+
+        Camera camera2 = new Camera();
+        camera2.setIp("192.168.1.222");
+        camera2.setPort(1212);
+        camera2.setUsername("masa2");
+        camera2.setPassword("2232asdfgfds");
+
+        List<Camera> cameraList = new ArrayList<>();
+        cameraList.add(camera);
+        cameraList.add(camera2);
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(cameraList));
 
     }
 
     private static void serverTest() {
         MainApi mainApi = new MainApi();
-        mainApi.onStart(null);
+        mainApi.onStart();
     }
 
     private static void cameraBotTest() {

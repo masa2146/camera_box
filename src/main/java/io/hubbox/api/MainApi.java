@@ -40,27 +40,28 @@ public class MainApi implements ModuleCommons {
     private File uploadDir = new File(uploadPath);
     private CameraBot cameraBot;
     private Service http;
+    private ObjectMapper objectMapper;
 
-    @Override
-    public void onStart(Service http) {
-//        this.http = ignite().port(8282);
-        this.http = http;
-//        Database_Helper.init("jdbc:h2:~/hubbox");
-        uploadDir.mkdir();
-        this.http.post("/import", this::importWhiteList);
-        this.http.post("/camera", this::addCamera); // add camera
-        this.http.delete("/camera/:id", this::deleteCamera); // delete camera
-        this.http.get("/camera", this::listCamera); // camera list
-    }
 
     @Override
     public void onStart() {
-
+        System.out.println("onStart()");
+        cameraBot = new CameraBot();
+        objectMapper = new ObjectMapper();
+//        this.http = (Service) map.get("test");
+        this.http = Service.ignite().port(4848);
+        Database_Helper.init("jdbc:h2:~/hubbox");
+        uploadDir.mkdir();
+        this.http.get("/camera/list", this::listCamera); // camera list
+        this.http.get("/camera/:id", this::getCameraById); // camera by id
+        this.http.post("/camera", this::addCamera); // add camera
+        this.http.post("/import", this::importWhiteList);
+        this.http.delete("/camera/:id", this::deleteCamera); // delete camera
     }
+
 
     @Override
     public void onInit() {
-
     }
 
     @Override
@@ -73,11 +74,29 @@ public class MainApi implements ModuleCommons {
 
     }
 
+    private String listCamera(Request request, Response response) throws JsonProcessingException {
+        try {
+            response.type("application/json");
+            checkProperty();
+            Object[] cameras = Database_Helper.getCustomProperty("cameras");
+            List<Camera> cameraList = Arrays.asList(objectMapper.readValue(String.valueOf(cameras[0]), Camera[].class));
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(cameraList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Failed"));
+        }
+    }
+
+    private String getCameraById(Request request, Response response) throws JsonProcessingException {
+        response.type("application/json");
+        Long id = Long.valueOf(request.params("id"));
+        return getCameraById(id);
+    }
+
     private String addCamera(Request request, Response response) throws JsonProcessingException {
         try {
             response.type("application/json");
             checkProperty();
-            ObjectMapper objectMapper = new ObjectMapper();
             Camera camera = objectMapper.readValue(request.body(), Camera.class);
             Object[] cameras = Database_Helper.getCustomProperty("cameras");
             List<Camera> cameraList = new ArrayList<>();
@@ -88,10 +107,10 @@ public class MainApi implements ModuleCommons {
             camera.setId(maxId + 1);
             cameraList.add(camera);
             Database_Helper.setCustomProperty("cameras", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(cameraList));
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Success"));
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Success"));
         } catch (Exception e) {
             e.printStackTrace();
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Failed"));
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Failed"));
         }
     }
 
@@ -100,42 +119,28 @@ public class MainApi implements ModuleCommons {
             response.type("application/json");
             checkProperty();
             Long id = Long.valueOf(request.params("id"));
-            ObjectMapper objectMapper = new ObjectMapper();
             Object[] cameras = Database_Helper.getCustomProperty("cameras");
             List<Camera> cameraList = objectMapper.readValue(String.valueOf(cameras[0]), new TypeReference<>() {
             });
 
             Camera camera = cameraList.stream().filter(x -> x.getId().equals(id)).findFirst().orElse(null);
             if (camera == null)
-                return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Id " + id + " not found"));
+                return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Id " + id + " not found"));
             cameraList.remove(camera);
             Database_Helper.setCustomProperty("cameras", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(cameraList));
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Success"));
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Success"));
         } catch (Exception e) {
             e.printStackTrace();
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Failed"));
-        }
-    }
-
-    private String listCamera(Request request, Response response) throws JsonProcessingException {
-        try {
-            response.type("application/json");
-            checkProperty();
-            ObjectMapper objectMapper = new ObjectMapper();
-            Object[] cameras = Database_Helper.getCustomProperty("cameras");
-            List<Camera> cameraList = Arrays.asList(objectMapper.readValue(String.valueOf(cameras[0]), Camera[].class));
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(cameraList);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Failed"));
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Failed"));
         }
     }
 
     private String importWhiteList(Request request, Response response) throws IOException {
+        response.type("application/json");
         String body = request.body();
         File file = FileTools.JSONtoCSV(body);
         String status = cameraBot.importWhiteList(file.getPath());
-        return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage(status));
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage(status));
     }
 
     private String uploadCSV(Request request, Response response) {
@@ -159,6 +164,18 @@ public class MainApi implements ModuleCommons {
             http.halt(HttpStatus.BAD_GATEWAY_502);
             return "{ \"message\": \"" + "Failed" + "\"}";
         }
+    }
+
+    private String getCameraById(Long id) throws JsonProcessingException {
+        checkProperty();
+        Object[] cameras = Database_Helper.getCustomProperty("cameras");
+        List<Camera> cameraList = objectMapper.readValue(String.valueOf(cameras[0]), new TypeReference<>() {
+        });
+
+        Camera camera = cameraList.stream().filter(x -> x.getId().equals(id)).findFirst().orElse(null);
+        if (camera == null)
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new ResponseMessage("Id " + id + " not found"));
+        else return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(camera);
     }
 
     private void checkProperty() {
