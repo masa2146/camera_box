@@ -35,6 +35,7 @@ Camera Box uygulamasının bu versiyonu aşağıdaki end-pointler üzerinde işl
 * http://localhost:8080/import :  **POST** White list import etme işleminde kullanılır. 
 <br>Örnek veri: 
 <br>
+ 
 ```json
 [
   {
